@@ -1,0 +1,58 @@
+{
+  "name": "destiny-bakes",
+  "version": "0.1.0",
+  "description": "AI-powered cake ordering platform for Destiny Bakes",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@clerk/nextjs": "^4.29.0",
+    "@copilotkit/react-core": "^1.9.3",
+    "@copilotkit/react-ui": "^1.9.3",
+    "@supabase/supabase-js": "^2.38.0",
+    "@xstate/react": "^4.1.0",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.0.0",
+    "lucide-react": "^0.294.0",
+    "next": "^15.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "tailwind-merge": "^2.0.0",
+    "tailwindcss-animate": "^1.0.7",
+    "xstate": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "autoprefixer": "^10.4.0",
+    "eslint": "^8.50.0",
+    "eslint-config-next": "^15.0.0",
+    "postcss": "^8.4.0",
+    "tailwindcss": "^3.3.0",
+    "typescript": "^5.2.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/creativesites/Destiny-Bakes.git"
+  },
+  "keywords": [
+    "bakery",
+    "website",
+    "ai",
+    "nextjs",
+    "copilotkit",
+    "zambia"
+  ],
+  "author": "Winston Zulu",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/creativesites/Destiny-Bakes/issues"
+  },
+  "homepage": "https://github.com/creativesites/Destiny-Bakes#readme"
+}
