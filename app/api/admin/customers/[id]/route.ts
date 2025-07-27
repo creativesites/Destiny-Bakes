@@ -11,8 +11,8 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { userId } = auth()
-    const { id: customerId } = params
+    const { userId } = await auth();
+    const { id: customerId } = params;
     
     if (!userId) {
       return NextResponse.json({ 
