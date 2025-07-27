@@ -1,5 +1,8 @@
 import type { Metadata } from 'next'
 import { Playfair_Display, Poppins, Dancing_Script } from 'next/font/google'
+import { ClerkProvider } from '@clerk/nextjs'
+import { CopilotKit } from "@copilotkit/react-core"
+import "@copilotkit/react-ui/styles.css"
 import './globals.css'
 
 const playfair = Playfair_Display({ 
@@ -41,15 +44,19 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${playfair.variable} ${poppins.variable} ${dancing.variable}`}>
-      <head>
-        <link rel="icon" href="/favicon.ico" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="theme-color" content="#ec4899" />
-      </head>
-      <body className={`min-h-screen font-body antialiased hero-background`}>
-        {children}
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en" className={`${playfair.variable} ${poppins.variable} ${dancing.variable}`}>
+        <head>
+          <link rel="icon" href="/favicon.ico" />
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <meta name="theme-color" content="#ec4899" />
+        </head>
+        <body className={`min-h-screen font-body antialiased hero-background`}>
+          <CopilotKit publicApiKey="ck_pub_40e482be29b4a52905e7b63dad1d5e1f">
+            {children}
+          </CopilotKit>
+        </body>
+      </html>
+    </ClerkProvider>
   )
 }
