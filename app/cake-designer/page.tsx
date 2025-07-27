@@ -21,6 +21,9 @@ interface CakeSpecs {
   tiers?: number
   servings?: number
   budget?: string
+  catalogueDesign?: string
+  photoUpload?: File | null
+  photoPrint?: boolean
 }
 
 export default function CakeDesignerPage() {
@@ -410,11 +413,11 @@ export default function CakeDesignerPage() {
                     variant="outline" 
                     size="xl"
                     className="border-2 border-white text-white hover:bg-white hover:text-gray-800"
-                    onClick={() => router.push('/catalog')}
+                    onClick={() => router.push('/catalogue')}
                   >
                     <span className="flex items-center space-x-3">
                       <span className="text-3xl">✨</span>
-                      <span>Browse Existing Designs</span>
+                      <span>Browse Catalogue Designs</span>
                     </span>
                   </Button>
                 </div>

@@ -205,9 +205,11 @@ module.exports = {
         "gradient-shift": "gradient-shift 3s ease-in-out infinite",
       },
       fontFamily: {
-        'display': ['var(--font-playfair)', 'serif'],
-        'body': ['var(--font-poppins)', 'sans-serif'],
-        'script': ['var(--font-dancing)', 'cursive'],
+        'heading': ['var(--font-merienda)', 'Merienda', 'cursive'],           // Headings
+        'body': ['var(--font-poppins)', 'Poppins', 'sans-serif'],             // Body text
+        'script': ['var(--font-dancing)', 'Dancing Script', 'cursive'],       // Optional accents
+        'handwriting': ['"Great Vibes"', 'cursive'],                           // Extra flourish
+        'elegant': ['"Cormorant Garamond"', 'serif'],                          // Subtle elegance
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',

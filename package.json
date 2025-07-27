@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "analyze-catalogue": "node scripts/analyze-catalogue-images.js"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.27.1",

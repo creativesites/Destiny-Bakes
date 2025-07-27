@@ -1,33 +1,75 @@
 'use client'
+import { useState, useEffect } from 'react'
 import { redirect } from 'next/navigation'
 import { Navbar } from '@/components/layout/Navbar'
-import { supabase } from '@/lib/supabase'
-import { useAuthStatus } from '@/lib/auth-client'
 import Link from 'next/link' 
 import { useUser } from '@clerk/nextjs'
 
-export default async function DashboardPage() {
-  const { user, isLoaded } = useUser()
-  const { isSignedIn } = useAuthStatus()
-  
-  // if (!isSignedIn) {
-  //   redirect('/sign-in')
-  // }
+interface Order {
+  id: string
+  order_number: string
+  cake_config: any
+  total_amount: number
+  status: string
+  delivery_date: string
+  created_at: string
+}
 
-  // Fetch user's recent orders
-  const { data: orders } = await supabase
-    .from('orders')
-    .select(`
-      *,
-      order_events (
-        event_type,
-        description,
-        created_at
-      )
-    `)
-    .eq('customer_id', user?.id)
-    .order('created_at', { ascending: false })
-    .limit(5)
+export default function DashboardPage() {
+  const { user, isLoaded } = useUser()
+  const [orders, setOrders] = useState<Order[]>([])
+  const [loading, setLoading] = useState(true)
+  
+  useEffect(() => {
+    if (isLoaded && user) {
+      fetchUserOrders()
+    }
+  }, [isLoaded, user])
+
+  const fetchUserOrders = async () => {
+    try {
+      // First, ensure user profile exists
+      let profileResponse = await fetch('/api/user/profile')
+      
+      if (!profileResponse.ok) {
+        const profileData = await profileResponse.json()
+        if (profileData.needsCreation) {
+          // Create profile
+          profileResponse = await fetch('/api/user/profile', { method: 'POST' })
+          if (!profileResponse.ok) {
+            console.error('Failed to create user profile')
+            return
+          }
+        }
+      }
+
+      // Now fetch orders
+      const response = await fetch('/api/orders/user')
+      if (response.ok) {
+        const data = await response.json()
+        setOrders(data.data || [])
+      } else {
+        console.error('Failed to fetch orders:', await response.text())
+      }
+    } catch (error) {
+      console.error('Error fetching orders:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin text-4xl">🎂</div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    redirect('/sign-in')
+    return null
+  }
 
   return (
     <div className="min-h-screen">
@@ -56,12 +98,12 @@ export default async function DashboardPage() {
             </div>
           </Link>
 
-          <Link href="/catalog" className="card-elegant group hover:shadow-2xl transition-all duration-300">
+          <Link href="/catalogue" className="card-elegant group hover:shadow-2xl transition-all duration-300">
             <div className="text-center space-y-4">
               <div className="w-16 h-16 bg-accent-100 rounded-full flex items-center justify-center mx-auto group-hover:scale-110 transition-transform">
                 <span className="text-3xl">📋</span>
               </div>
-              <h3 className="font-display text-xl font-semibold">Browse Catalog</h3>
+              <h3 className="font-display text-xl font-semibold">Browse Catalogue</h3>
               <p className="text-gray-600">Explore our collection of signature cakes</p>
             </div>
           </Link>
@@ -88,7 +130,12 @@ export default async function DashboardPage() {
                 </Link>
               </div>
 
-              {orders && orders.length > 0 ? (
+              {loading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin text-3xl mb-2">🎂</div>
+                  <p className="text-gray-600">Loading your orders...</p>
+                </div>
+              ) : orders && orders.length > 0 ? (
                 <div className="space-y-4">
                   {orders.map((order) => (
                     <div key={order.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
@@ -99,7 +146,7 @@ export default async function DashboardPage() {
                           </div>
                           <div>
                             <h3 className="font-semibold text-gray-800">
-                              {order.cake_config.flavor} {order.cake_config.shape} Cake
+                              {order.cake_config?.flavor || 'Custom'} {order.cake_config?.shape || ''} Cake
                             </h3>
                             <p className="text-sm text-gray-600">Order #{order.order_number}</p>
                           </div>
@@ -117,7 +164,7 @@ export default async function DashboardPage() {
                         </div>
                       </div>
                       <div className="flex items-center justify-between text-sm text-gray-600">
-                        <span>Size: {order.cake_config.size} | Layers: {order.cake_config.layers}</span>
+                        <span>Size: {order.cake_config?.size || 'N/A'} | Layers: {order.cake_config?.layers || 'N/A'}</span>
                         <span>Delivery: {order.delivery_date}</span>
                       </div>
                     </div>
@@ -161,7 +208,7 @@ export default async function DashboardPage() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">Orders Completed</span>
-                  <span className="font-semibold">{orders?.filter(o => o.status === 'delivered').length || 0}</span>
+                  <span className="font-semibold">{orders.filter(o => o.status === 'delivered').length || 0}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">Favorite Flavor</span>
@@ -169,8 +216,7 @@ export default async function DashboardPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">Member Since</span>
-                  {/* @ts-ignore */}
-                  <span className="font-semibold">{new Date(user?.createdAt).getFullYear()}</span>
+                  <span className="font-semibold">{user.createdAt ? new Date(user.createdAt).getFullYear() : 'N/A'}</span>
                 </div>
               </div>
             </div>

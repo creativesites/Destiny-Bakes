@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useUser } from '@clerk/nextjs'
 import { Navbar } from '@/components/layout/Navbar'
 import { CakeDesignAssistant } from '@/components/ai/CakeDesignAssistant'
@@ -34,10 +35,23 @@ const SHAPES = [
   { name: 'Heart', emoji: '💖', description: 'Romantic heart shape, ideal for special moments' },
 ]
 
+interface CatalogCake {
+  id: string
+  name: string
+  description: string
+  base_price: number
+  category: string
+  images: string[]
+  available: boolean
+  featured?: boolean
+  difficulty_level?: number
+}
+
 export default function InteractiveCakeDesigner() {
+  const router = useRouter()
   const { user, isLoaded } = useUser()
   const [cakeConfig, setCakeConfig] = useState<Partial<CakeConfig>>({})
-  const [currentStep, setCurrentStep] = useState(1)
+  const [currentStep, setCurrentStep] = useState(0) // Start with step 0 for catalogue selection
   const [totalPrice, setTotalPrice] = useState(0)
   const [aiPreview, setAiPreview] = useState('')
   const [showAI, setShowAI] = useState(false)
@@ -47,6 +61,28 @@ export default function InteractiveCakeDesigner() {
   const [isPlacingOrder, setIsPlacingOrder] = useState(false)
   const [orderPlaced, setOrderPlaced] = useState(false)
   const [showOrderDialog, setShowOrderDialog] = useState(false)
+  const [catalogCakes, setCatalogCakes] = useState<CatalogCake[]>([])
+  const [selectedCatalogCake, setSelectedCatalogCake] = useState<CatalogCake | null>(null)
+  const [showCatalogStep, setShowCatalogStep] = useState(true)
+
+  // Fetch catalog cakes
+  useEffect(() => {
+    if (isLoaded && user) {
+      fetchCatalogCakes()
+    }
+  }, [isLoaded, user])
+
+  const fetchCatalogCakes = async () => {
+    try {
+      const response = await fetch('/api/cakes?available=true&featured=true')
+      if (response.ok) {
+        const data = await response.json()
+        setCatalogCakes(data.data || [])
+      }
+    } catch (error) {
+      console.error('Error fetching catalog cakes:', error)
+    }
+  }
 
   // Calculate price whenever config changes
   useEffect(() => {
@@ -86,7 +122,29 @@ export default function InteractiveCakeDesigner() {
   }
 
   const handleStepComplete = () => {
-    setCurrentStep(prev => Math.min(prev + 1, 5))
+    setCurrentStep(prev => Math.min(prev + 1, 6)) // Updated to handle 6 steps (0-5)
+  }
+
+  const handleCatalogSelection = (cake: CatalogCake | null) => {
+    setSelectedCatalogCake(cake)
+    if (cake) {
+      // Pre-fill some config based on cake name/description
+      const inferredFlavor = cake.name.toLowerCase().includes('vanilla') ? 'Vanilla' :
+                            cake.name.toLowerCase().includes('chocolate') ? 'Chocolate' :
+                            cake.name.toLowerCase().includes('strawberry') ? 'Strawberry' : 'Vanilla'
+      
+      setCakeConfig(prev => ({
+        ...prev,
+        catalogueDesign: cake.id,
+        flavor: inferredFlavor
+      }))
+    }
+    setCurrentStep(1) // Move to flavor selection
+  }
+
+  const handleSkipCatalog = () => {
+    setShowCatalogStep(false)
+    setCurrentStep(1) // Move to flavor selection
   }
 
   const handleImageSelect = (image: CakeImageType) => {
@@ -126,8 +184,8 @@ export default function InteractiveCakeDesigner() {
       if (result.success) {
         setOrderPlaced(true)
         setShowOrderDialog(false)
-        // Could redirect to order confirmation page
-        // router.push(`/orders/${result.order.id}`)
+        // Redirect to order confirmation page
+        router.push(`/order-confirmation/${result.data.id}`)
       } else {
         alert('Failed to place order: ' + result.error)
       }
@@ -141,6 +199,7 @@ export default function InteractiveCakeDesigner() {
 
   const isStepComplete = (step: number) => {
     switch (step) {
+      case 0: return true // Catalog selection is optional
       case 1: return !!cakeConfig.flavor
       case 2: return !!cakeConfig.size && !!cakeConfig.shape
       case 3: return !!cakeConfig.layers && !!cakeConfig.tiers
@@ -220,18 +279,18 @@ export default function InteractiveCakeDesigner() {
         {/* Progress Bar */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            {[1, 2, 3, 4, 5].map((step) => (
+            {[0, 1, 2, 3, 4].map((step) => (
               <div key={step} className="flex items-center">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
                   currentStep >= step 
                     ? 'bg-primary-500 text-white' 
-                    : isStepComplete(step)
+                    : isStepComplete(step + 1)
                     ? 'bg-green-500 text-white'
                     : 'bg-gray-200 text-gray-600'
                 }`}>
-                  {isStepComplete(step) && currentStep > step ? '✓' : step}
+                  {isStepComplete(step + 1) && currentStep > step ? '✓' : step + 1}
                 </div>
-                {step < 5 && (
+                {step < 4 && (
                   <div className={`w-16 h-1 mx-2 ${
                     currentStep > step ? 'bg-primary-500' : 'bg-gray-200'
                   }`} />
@@ -253,12 +312,301 @@ export default function InteractiveCakeDesigner() {
           {/* Main Designer */}
           <div className="lg:col-span-2">
             <div className="card-elegant">
+              {/* Step 0: Catalog Selection (Optional) */}
+              {currentStep === 0 && showCatalogStep && (
+                <div className="space-y-8">
+                  <div className="text-center">
+                    <h2 className="font-display text-3xl font-bold text-gray-800 mb-4">
+                      🎨 Start Your Creation Journey
+                    </h2>
+                    <p className="text-xl text-gray-600 mb-2">
+                      Choose your path to the perfect cake
+                    </p>
+                    <p className="text-gray-500">
+                      Start with one of our signature designs or create something completely unique
+                    </p>
+                  </div>
+
+                  {/* Path Selection */}
+                  <div className="grid md:grid-cols-2 gap-6 mb-8">
+                    <div className="relative group">
+                      <div className="absolute inset-0 bg-gradient-to-r from-primary-500/20 to-accent-500/20 rounded-2xl blur-xl opacity-50 group-hover:opacity-75 transition-opacity"></div>
+                      <div className="relative bg-white border-2 border-gray-200 rounded-2xl p-6 transition-all duration-300 group-hover:border-primary-300 group-hover:shadow-xl">
+                        <div className="text-center">
+                          <div className="w-16 h-16 bg-gradient-to-r from-primary-500 to-accent-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span className="text-2xl">🎂</span>
+                          </div>
+                          <h3 className="font-display text-xl font-bold text-gray-800 mb-2">
+                            Browse Our Collection
+                          </h3>
+                          <p className="text-gray-600 mb-4">
+                            Start with one of our beautifully crafted signature cakes and customize it to your liking
+                          </p>
+                          <div className="text-sm text-primary-600 font-medium">
+                            {catalogCakes.length} featured cakes available
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="relative group">
+                      <div className="absolute inset-0 bg-gradient-to-r from-secondary-500/20 to-primary-500/20 rounded-2xl blur-xl opacity-50 group-hover:opacity-75 transition-opacity"></div>
+                      <div className="relative bg-white border-2 border-gray-200 rounded-2xl p-6 transition-all duration-300 group-hover:border-secondary-300 group-hover:shadow-xl">
+                        <div className="text-center">
+                          <div className="w-16 h-16 bg-gradient-to-r from-secondary-500 to-primary-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span className="text-2xl">✨</span>
+                          </div>
+                          <h3 className="font-display text-xl font-bold text-gray-800 mb-2">
+                            Create from Scratch
+                          </h3>
+                          <p className="text-gray-600 mb-4">
+                            Design your cake from the ground up with complete freedom over every detail
+                          </p>
+                          <button
+                            onClick={handleSkipCatalog}
+                            className="btn-secondary w-full"
+                          >
+                            Start Creating
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Featured Cakes Collection */}
+                  {catalogCakes.length > 0 && (
+                    <div className="space-y-6">
+                      <div className="text-center">
+                        <h3 className="font-display text-2xl font-semibold text-gray-800 mb-2">
+                          ✨ Our Signature Collection
+                        </h3>
+                        <p className="text-gray-600">
+                          Choose a cake below to customize, or explore all options
+                        </p>
+                      </div>
+
+                      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {catalogCakes.slice(0, 6).map((cake) => (
+                          <div
+                            key={cake.id}
+                            onClick={() => handleCatalogSelection(cake)}
+                            className={`group relative cursor-pointer transition-all duration-300 transform hover:scale-105 ${
+                              selectedCatalogCake?.id === cake.id ? 'scale-105' : ''
+                            }`}
+                          >
+                            {/* Selection Indicator */}
+                            {selectedCatalogCake?.id === cake.id && (
+                              <div className="absolute -top-2 -right-2 z-10">
+                                <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-lg">
+                                  <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                  </svg>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Glow Effect */}
+                            <div className={`absolute inset-0 bg-gradient-to-r from-primary-500/20 to-accent-500/20 rounded-2xl blur-xl transition-opacity duration-300 ${
+                              selectedCatalogCake?.id === cake.id 
+                                ? 'opacity-75' 
+                                : 'opacity-0 group-hover:opacity-50'
+                            }`}></div>
+
+                            {/* Card Content */}
+                            <div className={`relative bg-white rounded-2xl overflow-hidden border-2 transition-all duration-300 ${
+                              selectedCatalogCake?.id === cake.id
+                                ? 'border-primary-500 shadow-xl'
+                                : 'border-gray-200 group-hover:border-primary-300 group-hover:shadow-lg'
+                            }`}>
+                              {/* Image */}
+                              <div className="relative h-48 overflow-hidden">
+                                {cake.images && cake.images[0] ? (
+                                  <img
+                                    src={`/images/catalogue/${cake.images[0]}`}
+                                    alt={cake.name}
+                                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full bg-gradient-to-br from-primary-100 to-accent-100 flex items-center justify-center">
+                                    <span className="text-6xl opacity-50">🎂</span>
+                                  </div>
+                                )}
+                                
+                                {/* Featured Badge */}
+                                {cake.featured && (
+                                  <div className="absolute top-3 left-3">
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-yellow-400 to-orange-500 text-white shadow-lg">
+                                      ⭐ Featured
+                                    </span>
+                                  </div>
+                                )}
+
+                                {/* Price Badge */}
+                                <div className="absolute top-3 right-3">
+                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-white/90 backdrop-blur-sm text-gray-800 shadow-lg">
+                                    K{cake.base_price}
+                                  </span>
+                                </div>
+
+                                {/* Overlay on Hover */}
+                                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                                  <div className="bg-white/90 backdrop-blur-sm rounded-lg px-4 py-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                                    <span className="text-sm font-medium text-gray-800">
+                                      Click to Select
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Content */}
+                              <div className="p-4">
+                                <h3 className="font-display text-lg font-bold text-gray-800 mb-2 line-clamp-1">
+                                  {cake.name}
+                                </h3>
+                                <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                                  {cake.description}
+                                </p>
+                                
+                                {/* Category & Features */}
+                                <div className="flex items-center justify-between">
+                                  <span className="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium bg-gray-100 text-gray-700">
+                                    {cake.category}
+                                  </span>
+                                  {cake.difficulty_level && (
+                                    <div className="flex items-center space-x-1">
+                                      {[...Array(5)].map((_, i) => (
+                                        <svg
+                                          key={i}
+                                          className={`w-3 h-3 ${
+                                            i < cake.difficulty_level 
+                                              ? 'text-yellow-400' 
+                                              : 'text-gray-200'
+                                          }`}
+                                          fill="currentColor"
+                                          viewBox="0 0 20 20"
+                                        >
+                                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                        </svg>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* View All Cakes Link */}
+                      <div className="text-center">
+                        <Link 
+                          href="/catalogue" 
+                          className="inline-flex items-center space-x-2 text-primary-600 hover:text-primary-700 font-medium transition-colors"
+                        >
+                          <span>View All {catalogCakes.length} Cakes</span>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                          </svg>
+                        </Link>
+                      </div>
+
+                      {/* Action Buttons */}
+                      {selectedCatalogCake && (
+                        <div className="bg-gradient-to-r from-primary-50 to-accent-50 rounded-2xl p-6 border border-primary-200">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-4">
+                              <img
+                                src={`/images/catalogue/${selectedCatalogCake.images?.[0] || 'default.jpg'}`}
+                                alt={selectedCatalogCake.name}
+                                className="w-16 h-16 object-cover rounded-lg"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none'
+                                  const nextElement = e.currentTarget.nextElementSibling as HTMLElement
+                                  if (nextElement) {
+                                    nextElement.style.display = 'flex'
+                                  }
+                                }}
+                              />
+                              <div className="w-16 h-16 bg-primary-100 rounded-lg hidden items-center justify-center">
+                                <span className="text-2xl">🎂</span>
+                              </div>
+                              <div>
+                                <h4 className="font-display text-lg font-bold text-gray-800">
+                                  {selectedCatalogCake.name}
+                                </h4>
+                                <p className="text-sm text-gray-600">
+                                  Starting from K{selectedCatalogCake.base_price}
+                                </p>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => setCurrentStep(1)}
+                              className="btn-primary px-8"
+                            >
+                              Customize This Cake
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Loading State */}
+                  {catalogCakes.length === 0 && (
+                    <div className="text-center py-12">
+                      <div className="animate-spin text-4xl mb-4">🎂</div>
+                      <p className="text-gray-600">Loading our beautiful cakes...</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Step 1: Flavor Selection */}
               {currentStep === 1 && (
                 <div>
-                  <h2 className="font-display text-2xl font-semibold mb-6">
-                    Step 1: Choose Your Flavor 🍰
-                  </h2>
+                  {selectedCatalogCake ? (
+                    <div className="mb-6">
+                      <div className="bg-gradient-to-r from-primary-50 to-accent-50 rounded-2xl p-6 border border-primary-200 mb-6">
+                        <div className="flex items-center space-x-4 mb-4">
+                          <img
+                            src={`/images/catalogue/${selectedCatalogCake.images?.[0] || 'default.jpg'}`}
+                            alt={selectedCatalogCake.name}
+                            className="w-16 h-16 object-cover rounded-lg"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none'
+                              const nextElement = e.currentTarget.nextElementSibling as HTMLElement
+                              if (nextElement) {
+                                nextElement.style.display = 'flex'
+                              }
+                            }}
+                          />
+                          <div className="w-16 h-16 bg-primary-100 rounded-lg hidden items-center justify-center">
+                            <span className="text-2xl">🎂</span>
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-display text-lg font-bold text-gray-800">
+                              Customizing: {selectedCatalogCake.name}
+                            </h3>
+                            <p className="text-sm text-gray-600">{selectedCatalogCake.description}</p>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm text-gray-500">Base Price</div>
+                            <div className="text-lg font-bold text-primary-600">K{selectedCatalogCake.base_price}</div>
+                          </div>
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          💡 You can still customize all aspects of this cake including flavor, size, and decorations.
+                        </div>
+                      </div>
+                      <h2 className="font-display text-2xl font-semibold mb-6">
+                        Step 1: Customize Your Flavor 🍰
+                      </h2>
+                    </div>
+                  ) : (
+                    <h2 className="font-display text-2xl font-semibold mb-6">
+                      Step 1: Choose Your Flavor 🍰
+                    </h2>
+                  )}
                   <div className="grid md:grid-cols-2 gap-4 mb-6">
                     {FLAVORS.map((flavor) => (
                       <button
