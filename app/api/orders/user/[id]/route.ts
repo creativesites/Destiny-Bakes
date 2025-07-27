@@ -6,9 +6,10 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 const supabase = createClient(supabaseUrl, supabaseKey)
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { userId } = auth()
+    const { userId } = await auth()
+    const { id } = await params
     
     if (!userId) {
       return NextResponse.json({ 
@@ -34,7 +35,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const { data, error } = await supabase
       .from('orders')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('customer_id', userProfile.id) // Ensure user can only access their own orders
       .single()
 

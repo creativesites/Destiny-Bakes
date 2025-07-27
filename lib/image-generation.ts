@@ -13,6 +13,7 @@ export interface ImageGenerationResponse {
   images: CakeImagePreview[]
   specs: Partial<CakeConfig>
   error?: string
+  reused?: boolean
 }
 
 export async function generateCakeImages(

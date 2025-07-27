@@ -5,8 +5,9 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 const supabase = createClient(supabaseUrl, supabaseKey)
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const { data, error } = await supabase
       .from('orders')
       .select(`
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
           phone
         )
       `)
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
     if (error) {
@@ -50,8 +51,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const body = await request.json()
     
     const updateData: any = {}
@@ -63,7 +65,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       await supabase
         .from('order_events')
         .insert([{
-          order_id: params.id,
+          order_id: id,
           event_type: `Status changed to ${body.status}`,
           description: `Order status updated to ${body.status}`,
           created_at: new Date().toISOString()
@@ -77,7 +79,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       await supabase
         .from('order_events')
         .insert([{
-          order_id: params.id,
+          order_id: id,
           event_type: `Payment status changed to ${body.payment_status}`,
           description: `Payment status updated to ${body.payment_status}`,
           created_at: new Date().toISOString()
@@ -96,7 +98,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     const { data, error } = await supabase
       .from('orders')
       .update(updateData)
-      .eq('id', params.id)
+      .eq('id', id)
       .select()
       .single()
 

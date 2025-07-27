@@ -4,7 +4,7 @@ import { getCurrentUser } from '@/lib/auth-server'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser()
@@ -12,7 +12,8 @@ export async function POST(
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
-    const orderId = params.id
+    const { id } = await params
+    const orderId = id
 
     // Verify order belongs to user
     const { data: order, error: fetchError } = await supabase

@@ -478,7 +478,7 @@ export default function InteractiveCakeDesigner() {
                                         <svg
                                           key={i}
                                           className={`w-3 h-3 ${
-                                            i < cake.difficulty_level 
+                                            i < (cake.difficulty_level || 0) 
                                               ? 'text-yellow-400' 
                                               : 'text-gray-200'
                                           }`}

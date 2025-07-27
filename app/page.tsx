@@ -126,24 +126,6 @@ export default function HomePage() {
     }
   }, [featuredCakes.length])
 
-  // Social share function
-  const shareContent = async () => {
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: 'Destiny Bakes - Custom Cakes in Chirundu',
-          text: 'Check out these beautiful custom cakes from Destiny Bakes!',
-          url: window.location.href,
-        })
-      } else {
-        // Fallback for browsers that don't support Web Share API
-        const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`
-        window.open(shareUrl, '_blank')
-      }
-    } catch (err) {
-      console.log('Error sharing:', err)
-    }
-  }
 
 
   const fetchFeaturedCakes = async () => {

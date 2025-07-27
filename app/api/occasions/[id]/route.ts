@@ -6,9 +6,10 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 const supabase = createClient(supabaseUrl, supabaseKey)
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { userId } = auth()
+    const { userId } = await auth()
+    const { id } = await params
     
     if (!userId) {
       return NextResponse.json({ 
@@ -46,7 +47,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
         cake_preferences: body.cake_preferences || {},
         updated_at: new Date().toISOString()
       })
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('user_id', userProfile.id) // Ensure user can only update their own occasions
       .select()
       .single()
@@ -80,9 +81,10 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { userId } = auth()
+    const { id } = await params
+    const { userId } = await auth()
     
     if (!userId) {
       return NextResponse.json({ 
@@ -108,7 +110,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     const { error } = await supabase
       .from('user_occasions')
       .delete()
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('user_id', userProfile.id) // Ensure user can only delete their own occasions
 
     if (error) {

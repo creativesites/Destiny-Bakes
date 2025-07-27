@@ -5,12 +5,13 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 const supabase = createClient(supabaseUrl, supabaseKey)
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const { data, error } = await supabase
       .from('order_events')
       .select('*')
-      .eq('order_id', params.id)
+      .eq('order_id', id)
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -35,12 +36,13 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const body = await request.json()
     
     const eventData = {
-      order_id: params.id,
+      order_id: id,
       event_type: body.event_type,
       description: body.description,
       notes: body.notes || null,
