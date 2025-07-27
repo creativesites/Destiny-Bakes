@@ -17,7 +17,8 @@ export interface ImageGenerationResponse {
 
 export async function generateCakeImages(
   cakeSpecs: Partial<CakeConfig>, 
-  style: 'classic' | 'modern' | 'rustic' | 'elegant' = 'classic'
+  style: 'classic' | 'modern' | 'rustic' | 'elegant' = 'classic',
+  conversationId?: string
 ): Promise<ImageGenerationResponse> {
   try {
     const response = await fetch('/api/generate-cake-image', {
@@ -27,7 +28,8 @@ export async function generateCakeImages(
       },
       body: JSON.stringify({
         cakeSpecs,
-        style
+        style,
+        conversationId
       }),
     })
 

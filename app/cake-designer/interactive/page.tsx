@@ -9,6 +9,7 @@ import { CakeImagePreview } from '@/components/ai/CakeImagePreview'
 import type { CakeConfig } from '@/types/database'
 import type { CakeImagePreview as CakeImageType } from '@/lib/image-generation'
 import Link from 'next/link'
+// import { CakeVisualizer } from '@/components/ai/CakeVisualizer'
 
 const FLAVORS = [
   { name: 'Vanilla', emoji: '🤍', description: 'Classic vanilla sponge with buttercream' },
@@ -42,6 +43,10 @@ export default function InteractiveCakeDesigner() {
   const [showAI, setShowAI] = useState(false)
   const [aiStage, setAiStage] = useState('welcome')
   const [selectedImage, setSelectedImage] = useState<CakeImageType | null>(null)
+  const [selectedImages, setSelectedImages] = useState<string[]>([])
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false)
+  const [orderPlaced, setOrderPlaced] = useState(false)
+  const [showOrderDialog, setShowOrderDialog] = useState(false)
 
   // Calculate price whenever config changes
   useEffect(() => {
@@ -86,8 +91,52 @@ export default function InteractiveCakeDesigner() {
 
   const handleImageSelect = (image: CakeImageType) => {
     setSelectedImage(image)
-    // You could also trigger a callback or update the cake configuration
+    // Add to selected images if not already selected
+    if (!selectedImages.includes(image.id)) {
+      setSelectedImages(prev => [...prev, image.id])
+    }
     console.log('Selected cake image:', image)
+  }
+
+  const handlePlaceOrder = () => {
+    setShowOrderDialog(true)
+  }
+
+  const handleOrderSubmit = async (orderData: any) => {
+    setIsPlacingOrder(true)
+    try {
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          cake_config: cakeConfig,
+          total_amount: totalPrice,
+          delivery_date: orderData.deliveryDate,
+          delivery_time: orderData.deliveryTime,
+          delivery_address: orderData.deliveryAddress,
+          special_instructions: orderData.specialInstructions,
+          selected_images: selectedImages
+        }),
+      })
+
+      const result = await response.json()
+      
+      if (result.success) {
+        setOrderPlaced(true)
+        setShowOrderDialog(false)
+        // Could redirect to order confirmation page
+        // router.push(`/orders/${result.order.id}`)
+      } else {
+        alert('Failed to place order: ' + result.error)
+      }
+    } catch (error) {
+      console.error('Error placing order:', error)
+      alert('Error placing order. Please try again.')
+    } finally {
+      setIsPlacingOrder(false)
+    }
   }
 
   const isStepComplete = (step: number) => {
@@ -471,8 +520,12 @@ export default function InteractiveCakeDesigner() {
                     >
                       ← Start Over
                     </button>
-                    <button className="btn-primary flex-1">
-                      Place Order - K{totalPrice}
+                    <button 
+                      className="btn-primary flex-1"
+                      onClick={handlePlaceOrder}
+                      disabled={isPlacingOrder || !cakeConfig.flavor || !cakeConfig.size || !cakeConfig.shape}
+                    >
+                      {isPlacingOrder ? 'Placing Order...' : `Place Order - K${totalPrice}`}
                     </button>
                   </div>
                   {/* AI Image Generation Section */}
@@ -481,6 +534,7 @@ export default function InteractiveCakeDesigner() {
                         <CakeImagePreview 
                           cakeSpecs={cakeConfig}
                           onImageSelect={handleImageSelect}
+                          conversationId={user?.id}
                         />
                       </div>
                     )}
@@ -574,6 +628,162 @@ export default function InteractiveCakeDesigner() {
         onPriceUpdate={setTotalPrice}
         onPreviewGenerated={setAiPreview}
       />
+
+      {/* Order Placement Dialog */}
+      {showOrderDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl font-semibold mb-4">Complete Your Order</h3>
+            
+            {orderPlaced ? (
+              <div className="text-center py-8">
+                <div className="text-6xl mb-4">🎉</div>
+                <h4 className="text-xl font-semibold text-green-600 mb-2">Order Placed Successfully!</h4>
+                <p className="text-gray-600 mb-4">
+                  Your cake order has been received and will be processed shortly.
+                </p>
+                <button
+                  onClick={() => setShowOrderDialog(false)}
+                  className="bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700"
+                >
+                  Close
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={(e) => {
+                e.preventDefault()
+                const formData = new FormData(e.currentTarget)
+                handleOrderSubmit({
+                  deliveryDate: formData.get('deliveryDate'),
+                  deliveryTime: formData.get('deliveryTime'),
+                  deliveryAddress: {
+                    street: formData.get('street'),
+                    city: formData.get('city'),
+                    phone: formData.get('phone')
+                  },
+                  specialInstructions: formData.get('specialInstructions')
+                })
+              }}>
+                {/* Order Summary */}
+                <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                  <h4 className="font-semibold mb-2">Order Summary</h4>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span>Flavor:</span>
+                      <span>{cakeConfig.flavor}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Size:</span>
+                      <span>{cakeConfig.size}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Shape:</span>
+                      <span>{cakeConfig.shape}</span>
+                    </div>
+                    {cakeConfig.layers && (
+                      <div className="flex justify-between">
+                        <span>Layers:</span>
+                        <span>{cakeConfig.layers}</span>
+                      </div>
+                    )}
+                    {selectedImages.length > 0 && (
+                      <div className="flex justify-between">
+                        <span>Selected Images:</span>
+                        <span>{selectedImages.length}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between font-semibold pt-2 border-t">
+                      <span>Total:</span>
+                      <span>K{totalPrice}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Date</label>
+                      <input
+                        name="deliveryDate"
+                        type="date"
+                        required
+                        min={new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString().split('T')[0]}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Time</label>
+                      <select name="deliveryTime" required className="w-full border border-gray-300 rounded-lg px-3 py-2">
+                        <option value="">Select time</option>
+                        <option value="morning">Morning (9AM - 12PM)</option>
+                        <option value="afternoon">Afternoon (12PM - 5PM)</option>
+                        <option value="evening">Evening (5PM - 8PM)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Address</label>
+                    <input
+                      name="street"
+                      type="text"
+                      required
+                      placeholder="Street address"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-2"
+                    />
+                    <input
+                      name="city"
+                      type="text"
+                      required
+                      placeholder="City"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Contact Phone</label>
+                    <input
+                      name="phone"
+                      type="tel"
+                      required
+                      placeholder="Phone number"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Special Instructions (Optional)</label>
+                    <textarea
+                      name="specialInstructions"
+                      rows={3}
+                      placeholder="Any special requests or messages for the cake..."
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex space-x-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => setShowOrderDialog(false)}
+                    className="flex-1 border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50"
+                    disabled={isPlacingOrder}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 disabled:opacity-50"
+                    disabled={isPlacingOrder}
+                  >
+                    {isPlacingOrder ? 'Placing Order...' : `Place Order - K${totalPrice}`}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

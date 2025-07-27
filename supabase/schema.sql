@@ -99,13 +99,42 @@ CREATE TABLE IF NOT EXISTS ai_conversations (
 CREATE TABLE IF NOT EXISTS cake_previews (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     conversation_id UUID REFERENCES ai_conversations(id) ON DELETE CASCADE,
+    order_id UUID REFERENCES orders(id) ON DELETE SET NULL,
     image_url TEXT NOT NULL,
+    storage_path TEXT NOT NULL,
     description TEXT,
     specifications JSONB NOT NULL,
     ai_prompt TEXT,
     price DECIMAL(10,2),
     estimated_completion_time VARCHAR,
+    status VARCHAR DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+    approved_by UUID REFERENCES user_profiles(id),
+    approved_at TIMESTAMP WITH TIME ZONE,
+    reuse_count INTEGER DEFAULT 0,
+    hash VARCHAR UNIQUE,
     generated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create cake_templates table for saved designs
+CREATE TABLE IF NOT EXISTS cake_templates (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR NOT NULL,
+    description TEXT,
+    image_url TEXT NOT NULL,
+    storage_path TEXT NOT NULL,
+    specifications JSONB NOT NULL,
+    price DECIMAL(10,2),
+    category VARCHAR NOT NULL,
+    difficulty_level INTEGER DEFAULT 1 CHECK (difficulty_level BETWEEN 1 AND 5),
+    created_by UUID REFERENCES user_profiles(id),
+    status VARCHAR DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'featured')),
+    approved_by UUID REFERENCES user_profiles(id),
+    approved_at TIMESTAMP WITH TIME ZONE,
+    use_count INTEGER DEFAULT 0,
+    is_public BOOLEAN DEFAULT true,
+    tags TEXT[] DEFAULT ARRAY[]::TEXT[],
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Create analytics_events table
@@ -170,6 +199,11 @@ CREATE INDEX IF NOT EXISTS idx_analytics_events_user_id ON analytics_events(user
 CREATE INDEX IF NOT EXISTS idx_analytics_events_event_type ON analytics_events(event_type);
 CREATE INDEX IF NOT EXISTS idx_cakes_category ON cakes(category);
 CREATE INDEX IF NOT EXISTS idx_cakes_available ON cakes(available);
+CREATE INDEX IF NOT EXISTS idx_cake_previews_hash ON cake_previews(hash);
+CREATE INDEX IF NOT EXISTS idx_cake_previews_status ON cake_previews(status);
+CREATE INDEX IF NOT EXISTS idx_cake_templates_status ON cake_templates(status);
+CREATE INDEX IF NOT EXISTS idx_cake_templates_category ON cake_templates(category);
+CREATE INDEX IF NOT EXISTS idx_cake_templates_created_by ON cake_templates(created_by);
 
 -- Create updated_at trigger function
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -186,6 +220,7 @@ CREATE TRIGGER update_cakes_updated_at BEFORE UPDATE ON cakes FOR EACH ROW EXECU
 CREATE TRIGGER update_orders_updated_at BEFORE UPDATE ON orders FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_ai_conversations_updated_at BEFORE UPDATE ON ai_conversations FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_inventory_updated_at BEFORE UPDATE ON inventory FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_cake_templates_updated_at BEFORE UPDATE ON cake_templates FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Insert sample cake data
 INSERT INTO cakes (name, description, base_price, category, ingredients, allergens, featured) VALUES

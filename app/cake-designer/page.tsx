@@ -9,6 +9,9 @@ import { useCopilotAction, useCopilotReadable } from '@copilotkit/react-core'
 import { CopilotPopup } from '@copilotkit/react-ui'
 import Link from 'next/link'
 
+import { CakeVisualizer } from '@/components/ai/CakeVisualizer'
+
+
 interface CakeSpecs {
   occasion?: string
   flavor?: string

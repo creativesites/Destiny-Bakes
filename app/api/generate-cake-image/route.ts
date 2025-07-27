@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { getCurrentUser } from '@/lib/auth-server'
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
+import crypto from 'crypto'
 
 const xai = new OpenAI({
   apiKey: process.env.XAI_API_KEY!,
@@ -15,11 +18,50 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
+    const supabase = createRouteHandlerClient({ cookies })
     const body = await request.json()
-    const { cakeSpecs, style } = body
+    const { cakeSpecs, style, conversationId } = body
 
     if (!cakeSpecs) {
       return NextResponse.json({ error: 'Cake specifications required' }, { status: 400 })
+    }
+
+    // Create a hash of the specifications for smart reuse
+    const specHash = crypto.createHash('md5').update(JSON.stringify({ cakeSpecs, style })).digest('hex')
+
+    // Check if we already have previews for this exact configuration
+    const { data: existingPreviews } = await supabase
+      .from('cake_previews')
+      .select('*')
+      .eq('hash', specHash)
+      .eq('status', 'approved')
+      .limit(3)
+
+    if (existingPreviews && existingPreviews.length > 0) {
+      // Increment reuse count for existing previews
+      for (const preview of existingPreviews) {
+        await supabase
+          .from('cake_previews')
+          .update({ reuse_count: preview.reuse_count + 1 })
+          .eq('id', preview.id)
+      }
+
+      // Return existing previews
+      const imageData = existingPreviews.map((preview, index) => ({
+        id: preview.id,
+        url: preview.image_url,
+        revisedPrompt: preview.ai_prompt,
+        style: style || 'classic',
+        generated_at: preview.generated_at,
+        reused: true
+      }))
+
+      return NextResponse.json({
+        success: true,
+        images: imageData,
+        specs: cakeSpecs,
+        reused: true
+      })
     }
 
     // Generate detailed cake description for the AI
@@ -34,19 +76,84 @@ export async function POST(request: NextRequest) {
       n: 3, // Generate 3 different previews
     })
 
-    // Process the response
-    const imageData = response.data?.map((image, index) => ({
-      id: `preview-${index + 1}`,
-      url: image.url || '',
-      revisedPrompt: (image as any).revised_prompt || prompt,
-      style: style || 'classic',
-      generated_at: new Date().toISOString()
-    })) || []
+    // Process and save the response
+    const imageData = []
+    
+    for (let index = 0; index < (response.data?.length || 0); index++) {
+      const image = response.data?.[index]
+      if (!image?.url) continue
+
+      try {
+        // Download and store the image to Supabase Storage
+        const imageResponse = await fetch(image.url)
+        if (!imageResponse.ok) continue
+
+        const imageBuffer = await imageResponse.arrayBuffer()
+        const fileName = `cake-previews/${Date.now()}-${Math.random().toString(36).substring(7)}.png`
+
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('cake-images')
+          .upload(fileName, imageBuffer, {
+            contentType: 'image/png',
+            cacheControl: '3600'
+          })
+
+        if (uploadError) {
+          console.error('Upload error:', uploadError)
+          continue
+        }
+
+        // Get the public URL
+        const { data: publicUrlData } = supabase.storage
+          .from('cake-images')
+          .getPublicUrl(fileName)
+
+        // Save preview to database
+        const { data: previewData, error: previewError } = await supabase
+          .from('cake_previews')
+          .insert({
+            conversation_id: conversationId,
+            image_url: publicUrlData.publicUrl,
+            storage_path: fileName,
+            description: `${cakeSpecs.flavor} ${cakeSpecs.size} ${cakeSpecs.shape} cake`,
+            specifications: { cakeSpecs, style },
+            ai_prompt: prompt,
+            hash: specHash,
+            reuse_count: 1,
+            status: 'approved' // Auto-approve generated images
+          })
+          .select()
+          .single()
+
+        if (!previewError && previewData) {
+          imageData.push({
+            id: previewData.id,
+            url: previewData.image_url,
+            revisedPrompt: (image as any).revised_prompt || prompt,
+            style: style || 'classic',
+            generated_at: previewData.generated_at,
+            reused: false
+          })
+        }
+      } catch (saveError) {
+        console.error('Error saving image:', saveError)
+        // Fallback to original URL if saving fails
+        imageData.push({
+          id: `preview-${index + 1}`,
+          url: image.url || '',
+          revisedPrompt: (image as any).revised_prompt || prompt,
+          style: style || 'classic',
+          generated_at: new Date().toISOString(),
+          reused: false
+        })
+      }
+    }
 
     return NextResponse.json({
       success: true,
       images: imageData,
-      specs: cakeSpecs
+      specs: cakeSpecs,
+      reused: false
     })
 
   } catch (error) {

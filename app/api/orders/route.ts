@@ -16,7 +16,8 @@ export async function POST(request: NextRequest) {
       delivery_time, 
       delivery_address, 
       special_instructions,
-      total_amount 
+      total_amount,
+      selected_images 
     } = body
 
     // Validate required fields
@@ -51,6 +52,18 @@ export async function POST(request: NextRequest) {
     if (error) {
       console.error('Error creating order:', error)
       return NextResponse.json({ error: 'Failed to create order' }, { status: 500 })
+    }
+
+    // Associate selected images with the order
+    if (selected_images && selected_images.length > 0) {
+      const updatePromises = selected_images.map((imageId: string) =>
+        supabase
+          .from('cake_previews')
+          .update({ order_id: order.id })
+          .eq('id', imageId)
+      )
+
+      await Promise.all(updatePromises)
     }
 
     // Create initial order event
@@ -103,7 +116,13 @@ export async function GET(request: NextRequest) {
       .from('orders')
       .select(`
         *,
-        order_events(*)
+        order_events(*),
+        cake_previews (
+          id,
+          image_url,
+          description,
+          specifications
+        )
       `)
       .eq('customer_id', user.id)
       .order('created_at', { ascending: false })
