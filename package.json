@@ -16,6 +16,7 @@
     "@copilotkit/react-core": "^1.9.3",
     "@copilotkit/react-ui": "^1.9.3",
     "@copilotkit/runtime": "^1.9.3",
+    "@hello-pangea/dnd": "^18.0.1",
     "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@supabase/supabase-js": "^2.52.1",
     "@xstate/react": "^4.1.0",

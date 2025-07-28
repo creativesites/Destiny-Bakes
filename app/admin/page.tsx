@@ -58,7 +58,7 @@ export default function AdminDashboard() {
     value: {
       isAdmin: isAdminUser,
       stats,
-      sections: ["Orders", "Occasions", "Customers", "Analytics"],
+      sections: ["Orders", "Pages", "Settings", "Catalog", "Occasions", "Customers", "Templates", "Tracking"],
       userName: user?.firstName || 'Admin'
     }
   })
@@ -228,14 +228,14 @@ export default function AdminDashboard() {
         )}
 
         {/* Main Actions Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
           {/* Orders Management */}
-          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8 hover:shadow-2xl transition-all duration-300 hover:scale-105">
-            <div className="text-6xl mb-6 text-center">📦</div>
-            <h2 className="font-display text-2xl font-bold text-gray-800 mb-4 text-center">
+          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 hover:shadow-2xl transition-all duration-300 hover:scale-105">
+            <div className="text-5xl mb-4 text-center">📦</div>
+            <h2 className="font-display text-xl font-bold text-gray-800 mb-3 text-center">
               Order Management
             </h2>
-            <p className="text-gray-600 mb-6 text-center">
+            <p className="text-gray-600 mb-6 text-center text-sm">
               View, update, and track all customer orders and their status.
             </p>
             <Link href="/admin/orders">
@@ -245,50 +245,114 @@ export default function AdminDashboard() {
             </Link>
           </div>
 
-          {/* Occasions Management */}
-          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8 hover:shadow-2xl transition-all duration-300 hover:scale-105">
-            <div className="text-6xl mb-6 text-center">🎉</div>
-            <h2 className="font-display text-2xl font-bold text-gray-800 mb-4 text-center">
-              Occasions
+          {/* Page Management */}
+          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 hover:shadow-2xl transition-all duration-300 hover:scale-105">
+            <div className="text-5xl mb-4 text-center">📄</div>
+            <h2 className="font-display text-xl font-bold text-gray-800 mb-3 text-center">
+              Page Management
             </h2>
-            <p className="text-gray-600 mb-6 text-center">
-              Manage special occasions, themes, and seasonal offerings.
+            <p className="text-gray-600 mb-6 text-center text-sm">
+              Manage website pages and templates with visual page builder.
             </p>
-            <Link href="/admin/occasions">
-              <Button className="w-full bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800">
-                Manage Occasions
+            <Link href="/admin/pages">
+              <Button className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800">
+                Manage Pages
               </Button>
             </Link>
           </div>
 
-          {/* Catalog Management */}
-          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8 hover:shadow-2xl transition-all duration-300 hover:scale-105">
-            <div className="text-6xl mb-6 text-center">🎂</div>
-            <h2 className="font-display text-2xl font-bold text-gray-800 mb-4 text-center">
+          {/* System Settings */}
+          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 hover:shadow-2xl transition-all duration-300 hover:scale-105">
+            <div className="text-5xl mb-4 text-center">⚙️</div>
+            <h2 className="font-display text-xl font-bold text-gray-800 mb-3 text-center">
+              System Settings
+            </h2>
+            <p className="text-gray-600 mb-6 text-center text-sm">
+              Configure branding, contact info, and system preferences.
+            </p>
+            <Link href="/admin/settings">
+              <Button className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800">
+                System Settings
+              </Button>
+            </Link>
+          </div>
+
+          {/* Cake Catalog */}
+          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 hover:shadow-2xl transition-all duration-300 hover:scale-105">
+            <div className="text-5xl mb-4 text-center">🎂</div>
+            <h2 className="font-display text-xl font-bold text-gray-800 mb-3 text-center">
               Cake Catalog
             </h2>
-            <p className="text-gray-600 mb-6 text-center">
+            <p className="text-gray-600 mb-6 text-center text-sm">
               Manage cake offerings, pricing, and featured items.
             </p>
             <Link href="/admin/catalog">
-              <Button className="w-full bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800">
+              <Button className="w-full bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800">
                 Manage Catalog
               </Button>
             </Link>
           </div>
 
+          {/* Occasions Management */}
+          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 hover:shadow-2xl transition-all duration-300 hover:scale-105">
+            <div className="text-5xl mb-4 text-center">🎉</div>
+            <h2 className="font-display text-xl font-bold text-gray-800 mb-3 text-center">
+              Occasions
+            </h2>
+            <p className="text-gray-600 mb-6 text-center text-sm">
+              Manage special occasions, themes, and seasonal offerings.
+            </p>
+            <Link href="/admin/occasions">
+              <Button className="w-full bg-gradient-to-r from-pink-600 to-pink-700 hover:from-pink-700 hover:to-pink-800">
+                Manage Occasions
+              </Button>
+            </Link>
+          </div>
+
           {/* Customer Management */}
-          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8 hover:shadow-2xl transition-all duration-300 hover:scale-105">
-            <div className="text-6xl mb-6 text-center">👥</div>
-            <h2 className="font-display text-2xl font-bold text-gray-800 mb-4 text-center">
+          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 hover:shadow-2xl transition-all duration-300 hover:scale-105">
+            <div className="text-5xl mb-4 text-center">👥</div>
+            <h2 className="font-display text-xl font-bold text-gray-800 mb-3 text-center">
               Customers
             </h2>
-            <p className="text-gray-600 mb-6 text-center">
+            <p className="text-gray-600 mb-6 text-center text-sm">
               View customer profiles, orders history, and preferences.
             </p>
             <Link href="/admin/customers">
-              <Button className="w-full bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800">
+              <Button className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800">
                 View Customers
+              </Button>
+            </Link>
+          </div>
+
+          {/* Templates */}
+          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 hover:shadow-2xl transition-all duration-300 hover:scale-105">
+            <div className="text-5xl mb-4 text-center">🎨</div>
+            <h2 className="font-display text-xl font-bold text-gray-800 mb-3 text-center">
+              Templates
+            </h2>
+            <p className="text-gray-600 mb-6 text-center text-sm">
+              Manage existing templates and create new ones.
+            </p>
+            <Link href="/admin/templates">
+              <Button className="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800">
+                View Templates
+              </Button>
+            </Link>
+          </div>
+
+          {/* Order Tracking */}
+          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 hover:shadow-2xl transition-all duration-300 hover:scale-105">
+            <div className="text-5xl mb-4 text-center">📍</div>
+            <h2 className="font-display text-xl font-bold text-gray-800 mb-3 text-center">
+              Order Tracking
+            </h2>
+            <p className="text-gray-600 mb-6 text-center text-sm">
+              Track order locations and delivery status.
+            </p>
+            <Link href="/admin/tracking">
+              <Button className="w-full bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800">
+                View Tracking
               </Button>
             </Link>
           </div>
@@ -299,7 +363,7 @@ export default function AdminDashboard() {
           <h2 className="font-display text-3xl font-bold text-gray-800 mb-8">
             Quick Actions
           </h2>
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Link href="/admin/orders?status=pending">
               <div className="p-6 border-2 border-gray-200 rounded-2xl hover:border-gray-400 transition-all duration-300 hover:shadow-lg cursor-pointer">
                 <div className="flex items-center space-x-4">
@@ -324,13 +388,25 @@ export default function AdminDashboard() {
               </div>
             </Link>
             
-            <Link href="/admin/analytics">
+            <Link href="/admin/pages/builder/new">
               <div className="p-6 border-2 border-gray-200 rounded-2xl hover:border-gray-400 transition-all duration-300 hover:shadow-lg cursor-pointer">
                 <div className="flex items-center space-x-4">
-                  <div className="text-3xl">📈</div>
+                  <div className="text-3xl">✨</div>
                   <div>
-                    <h3 className="font-bold text-gray-800">View Analytics</h3>
-                    <p className="text-gray-600">Business insights</p>
+                    <h3 className="font-bold text-gray-800">Create New Page</h3>
+                    <p className="text-gray-600">Build custom pages</p>
+                  </div>
+                </div>
+              </div>
+            </Link>
+            
+            <Link href="/admin/settings">
+              <div className="p-6 border-2 border-gray-200 rounded-2xl hover:border-gray-400 transition-all duration-300 hover:shadow-lg cursor-pointer">
+                <div className="flex items-center space-x-4">
+                  <div className="text-3xl">⚙️</div>
+                  <div>
+                    <h3 className="font-bold text-gray-800">System Settings</h3>
+                    <p className="text-gray-600">Configure your bakery</p>
                   </div>
                 </div>
               </div>

@@ -123,7 +123,7 @@ export function Navbar() {
               <SignedIn>
                 <div className="flex items-center space-x-4">
                   <NavLink href="/dashboard">Dashboard</NavLink>
-                  {userRole === 'admin' && (
+                  {isAdminUser && (
                     <NavLink href="/admin" className="admin-link">
                       Admin
                     </NavLink>
